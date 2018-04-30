@@ -36,7 +36,7 @@ from polls.models import UserModel, StoredFiles
 import os
 
 from werkzeug.utils import secure_filename
-from django.core.files.storage import default_storage
+from django.core.files.storage import default_storage, FileSystemStorage
 from django.core.files.base import ContentFile
 import uuid
 import project.settings as settings
@@ -48,6 +48,9 @@ import json
 import pickle
 import base64
 import PIL
+from django.core.cache import cache
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import action
 
 ALLOWED_EXTENSIONS = set([ 'png', 'jpg', 'jpeg', 'gif'])
 
@@ -59,7 +62,47 @@ class UserModelViewSet(viewsets.ModelViewSet):
     # authentication_classes = (TokenAuthentication,)
 
     def get_queryset(self):
-        return UserModel.objects.all()
+         return UserModel.objects.all()
+
+    def list(self, request):
+        if cache.get('usermodel'):
+            data = cache.get('usermodel')
+            return Response(data)
+        else:
+            
+            queryset = UserModel.objects.all()
+            serializer = UserModelSerializer(queryset, many=True)
+            response = Response(serializer.data)
+            cache.set('usermodel', response.data, 43200)
+            return response
+
+    def retrieve(self, request, id=None):
+        queryset = UserModel.objects.all()
+        if cache.get(id):
+            data = cache.get(id)
+            return Response(data)
+        else:
+            user = UserModel.objects.get(id= id)
+            serializer = UserModelSerializer(user)
+            response = Response(serializer.data)
+            cache.set(id, response.data, 43200)
+            return response
+
+    @action(methods=['get'], detail=False)
+    def get_name(self, request):
+        return
+
+    def create(self, request):
+        pass
+
+    def update(self, request, id=None):
+        pass
+
+    def partial_update(self, request, id=None):
+        pass
+
+    def destroy(self, request, pk=None):
+        pass
 
 class FileViewSet(APIView):
 
@@ -83,6 +126,7 @@ class FileViewSet(APIView):
             tmp_file = os.path.join(settings.MEDIA_ROOT, date_folder+'/'+hour_folder+'/'+temp_name)
             path = default_storage.save(tmp_file, ContentFile(file.read()))
             StoredFiles.objects.get_or_create(file_name=filename, upload_path=path, stored_name=temp_name)
+            #FileSystemStorage(location=tmp_file, base_url="negar").save("test", ContentFile(file.read()))
             url = request.build_absolute_uri()
             if self.allowed_file(file.name):
                 im = PIL.Image.open(path)

@@ -8,7 +8,7 @@ class UserModel(Document):
      first_name = StringField(max_length=30, required = True)
      last_name = StringField(max_length=30, required = True)
      username = StringField(max_length=30, required = True, unique = True)
-     image = FileField(required=True)
+     image = FileField()
      meta = {'strict': False}
     #comments = ListField()
 

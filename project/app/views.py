@@ -78,9 +78,14 @@ class AuthorViewSet(views.APIView):
         #encrypted = cipher.encrypt(data_str)
         decrypted = cipher.decrypt(data_bytes)
         decrypted_data = json.loads(decrypted)
-        author =Author(name=decrypted_data['name'])
-        author.save()
-        return Response({'name':author.name})
+        serializer = AuthorSerializer (data=decrypted_data)
+        if serializer.is_valid():
+            serializer.save()
+        # author =Author(name=decrypted_data['name'])
+        # author.save()
+            return Response(serializer.data)
+        else:
+            return Response({'error': 'Invalid Data'})
 
     def get(self, request, pk, format=None):
         if pk:
